@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shopping</title>
+    <link rel="stylesheet" href="shop.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Shopping</h1>
+
+        <!--ฟอร์มสำหรับเพิ่มสินค้า-->
+        <div>
+            <input type="text" id="productName" placeholder="Product Name">
+            <input type="text" id="price" placeholder="Price">
+            <input type="text" id="imageURL" placeholder="Image URL">
+            <button onclick="createProduct()">Create Product</button>
+        </div>
+
+        <!--สินค้าต่างๆ ใน List-->
+        <ul id="productList"></ul>
+
+        <!--ฟอร์มสำหรับแก้ไขสินค้า-->
+        <div class="edit-form" id="editForm">
+            <h2>Edit Product</h2>
+            <input type="text" id="editProductName" placeholder="Product Name">
+            <input type="text" id="editPrice" placeholder="Price">
+            <input type="text" id="editImageURL" placeholder="Image URL">
+            <button id="saveEdit" onclick="saveEdit()">Save</button>
+            <button onclick="cancelEdit()">Cancel</button>
+        </div>
+
+        <!--ปุ่มสำหรับ เพิ่มสินค้าลงในตะกร้า-->
+        <div>
+            <button onclick="addToCart()">Add to Cart</button>
+        </div>
+
+        <!--ตะกร้าสินค้า-->
+        <div id="cartContainer">
+            <h2>Cart</h2>
+            <ul id="cartList"></ul>
+            <h3>Total price $<span id="totalPrice">0.00</span></h3>
+            <button onclick="calculateTotal()">Calculate Total</button>
+            <div id="notification" style="display: none; color: green;"></div>
+        </div>
+    </div>
+
+    <script>
+        let products = [];
+        let cart = [];
+        let currentEditIndex = null; 
+
+        //ฟังก์ชั่น สร้างผลิตภัณฑ์
+        function createProduct(){
+            let name = document.getElementById('productName').value;
+            let price = document.getElementById('price').value;
+            let imageURL = document.getElementById('imageURL').value;
+
+            if (name && price && imageURL) {
+                products.push({name, price: parseFloat(price), imageURL});
+                renderProducts();
+                clearInputs();
+            }
+        }
+
+        // ฟังก์ชั่น แสดงรายการสินค้า
+        function renderProducts(){
+            let productList = document.getElementById('productList');
+            productList.innerHTML = '';
+
+            products.forEach((product, index) => {
+                let li = document.createElement('li');
+                li.innerHTML = `
+                <input type="checkbox" id="product_${index}">
+                <img src="${product.imageURL}" alt="${product.name}" style="width:50px;height:50px;">
+                <span>${product.name}</span> - <span>$${product.price.toFixed(2)}</span>
+                <button onclick="editProduct(${index})">Edit</button>
+                <button onclick="deleteProduct(${index})">Delete</button>
+                `;
+                productList.appendChild(li);
+            });
+        }
+
+        // ฟังก์ชั่น แก้ไขข้อมูลสินค้า
+        function editProduct(index) {
+            let product = products[index];
+            currentEditIndex = index; 
+            document.getElementById('editProductName').value = product.name;
+            document.getElementById('editPrice').value = product.price;
+            document.getElementById('editImageURL').value = product.imageURL;
+            document.getElementById('editForm').style.display = 'block'; 
+        }
+
+        // ฟังก์ชั่น บันทึกการแก้ไข
+        function saveEdit() {
+            let name = document.getElementById('editProductName').value;
+            let price = document.getElementById('editPrice').value;
+            let imageURL = document.getElementById('editImageURL').value;
+
+            if (currentEditIndex !== null && name && price && imageURL) {
+                products[currentEditIndex] = {name, price: parseFloat(price), imageURL};
+                renderProducts();
+                cancelEdit(); 
+            }
+        }
+
+        // ฟังก์ชั่น ยกเลิกการแก้ไข
+        function cancelEdit() {
+            document.getElementById('editForm').style.display = 'none'; 
+            clearEditInputs(); 
+        }
+
+        // ฟังก์ชั่น ลบสินค้า
+        function deleteProduct(index){
+            products.splice(index, 1);
+            renderProducts();
+        }
+
+        // ฟังก์ชั่น เพิ่มสินค้าที่เลือกลงในตะกร้า
+        function addToCart(){
+            products.forEach((product, index) => {
+                let checkbox = document.getElementById(`product_${index}`);
+                if (checkbox.checked) {
+                    cart.push(product);
+                }
+
+                checkbox.checked = false;
+            });
+            renderCart(); 
+            showNotification('สินค้าถูกเพิ่มลงในตะกร้าแล้ว! กรุณากดปุ่ม "Calculate Total" เพื่อคำนวน');
+        }
+
+        // ฟังก์ชั่น แสดงรายการรถเข็น
+        function renderCart() {
+            let cartList = document.getElementById('cartList');
+            cartList.innerHTML = '';
+
+            if (cart.length === 0) {
+                document.getElementById('cartContainer').style.display = 'none'; 
+                return; 
+            }
+
+            cart.forEach((product, index) => {
+                let li = document.createElement('li');
+                li.innerHTML = `
+                <img src="${product.imageURL}" alt="${product.name}" style="width:50px;height:50px;">
+                <span>${product.name}</span> - <span>$${product.price.toFixed(2)}</span>
+                <button onclick="removeFromCart(${index})">Remove</button>
+                `;
+                cartList.appendChild(li);
+            });
+
+            document.getElementById('cartContainer').style.display = 'block'; 
+         
+        }
+
+        // ฟังก์ชั่น ลบสินค้าออกจากตะกร้า
+        function removeFromCart(index){
+            cart.splice(index, 1);
+            renderCart(); 
+            showNotification('สินค้าถูกลบออกจากตะกร้าแล้ว! กรุณากดปุ่ม "Calculate Total" เพื่อคำนวนใหม่');
+        }
+
+        // ฟังก์ชั่น คำนวณราคารวม
+        function calculateTotal() {
+            let total = cart.reduce((sum, product) => sum + product.price, 0);
+            document.getElementById('totalPrice').innerText = total.toFixed(2); 
+            showNotification('รวมราคาแล้วคำนวนแล้ว!');
+        }
+
+        // ฟังก์ชั่น เคลียร์ช่องกรอกข้อมูล
+        function clearInputs() {
+            document.getElementById('productName').value = '';
+            document.getElementById('price').value = '';
+            document.getElementById('imageURL').value = '';
+        }
+
+        // ฟังก์ชั่น เคลียร์ช่องกรอกข้อมูลฟอร์มแก้ไข
+        function clearEditInputs() {
+            document.getElementById('editProductName').value = '';
+            document.getElementById('editPrice').value = '';
+            document.getElementById('editImageURL').value = '';
+        }
+
+        //ฟังก์ชั่น แสดงการแจ้งเตือนกรณี ผู้ใช้มีการเปลื่ยนแปลงข้อมูลในตระกร้าแล้วไม่ได้กดคำนวนใหม่
+        function showNotification(message) {
+            let notification = document.getElementById('notification');
+            notification.innerText = message;
+            notification.style.display= 'block'
+
+            setTimeout(() => {
+                notification.style.display = 'none';
+            }, 5000); // ตั้งไว้ 5 วินาที แล้วค่อยหาไป
+        }
+    </script>
+</body>
+</html>
